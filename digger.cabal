@@ -1,0 +1,22 @@
+Name:                digger
+Version:             0.10
+Description:         ICFP2012 digger
+License:             GPL
+--License-file:        LICENSE
+Author:              Igor Drozdynskyi
+Maintainer:          igor.myth@gmail.com
+Build-Type:          Simple
+Cabal-Version:       >=1.6
+
+-- Library
+--  Exposed-Modules:     Lexer Parser Grammar
+--  Extensions:        DeriveDataTypeable
+
+Executable digger
+  Main-is:           main.hs
+  Build-Depends:     base >= 4.0, array
+-- Other-Modules:     
+  Hs-Source-Dirs:    src
+--  Extensions:          DeriveDataTypeable
+  ghc-options:       -rtsopts
+Generates rewrite facilities for the given grammar
