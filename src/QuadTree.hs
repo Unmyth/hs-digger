@@ -5,6 +5,7 @@ module QuadTree
 import qualified Data.Map as M
 import Pos
 import Data.List
+import Control.Monad.State
 
 data Node a b = Void
               | Leaf !a 
@@ -54,7 +55,7 @@ atPosWithDef (In (CachedNode _ sz node@Node{})) def pos =
         offsPos = pos - subPos * (Pos middle middle)
     in atPosWithDef (getSubNode subPos node) def offsPos
 
-type NodeCache a = M.Map (NodeCacheKey a) NodeIdx
+type NodeCache a = M.Map (NodeCacheKey a) (CachedTree a)
 
 nodeCache :: Ord a => Node a (CachedTree a) -> NodeCacheKey a
 nodeCache Void = NodeCacheKey Void
@@ -84,4 +85,55 @@ treeShow (In (CachedNode _ sz Void)) = replicate sz ""
 treeShow (In (CachedNode _ 1 (Leaf l))) = [show l]
 treeShow (In (CachedNode _ sz (Node v1 v2 v3 v4))) =
     zipWith (++) (treeShow v1) (treeShow v2) ++
-    zipWith (++) (treeShow v3) (treeShow v4)    
+    zipWith (++) (treeShow v3) (treeShow v4)
+
+type NodeCacheM a = StateT (NodeCacheState a) 
+
+data NodeCacheState a = NodeCacheState { ncCache :: (NodeCache a),
+                                         ncCurIdx :: NodeIdx }
+
+newNode :: (Ord a, Monad m) => Node a (CachedTree a) -> Int -> NodeCacheM a m (CachedTree a)
+newNode node sz = 
+    do 
+      let cacheVal = nodeCache node
+      tab <- gets ncCache
+      case M.lookup cacheVal tab of
+        Just v -> return v
+        Nothing -> do
+          idx <- gets ncCurIdx
+          let nodeVal = In $ CachedNode idx sz node
+          modify $ \ s@(NodeCacheState cache idx) -> 
+              NodeCacheState (M.insert cacheVal nodeVal cache)
+                             (idx + 1)
+          return nodeVal
+
+treeUpdate :: (Ord a, Monad m) => CachedTree a -> Pos -> a -> NodeCacheM a m (CachedTree a)
+treeUpdate (In (CachedNode _ sz Void)) pos val | sz == 1 =
+    newNode (Leaf val) sz
+treeUpdate (In (CachedNode _ sz Void)) pos val = do
+    voidNode <- newNode Void (sz `div` 2)
+    fourVoids <- newNode (Node voidNode voidNode voidNode voidNode) sz
+    treeUpdate fourVoids pos val
+treeUpdate (In (CachedNode _ sz (Leaf l))) pos val =
+    newNode (Leaf val) sz
+treeUpdate (In (CachedNode _ sz node@Node{})) pos val = 
+    let middle = sz `div` 2
+        subPos =  mapPos (`div` middle) pos
+        offsPos = pos - subPos * (Pos middle middle)
+    in 
+      do subNode <- treeUpdate (getSubNode subPos node) offsPos val
+         let nodeWithSub = setSubNode subPos subNode node
+         newNode nodeWithSub sz
+
+initTreeCache :: (Ord a, Monad m) => CachedTree a -> NodeCacheM a m (CachedTree a)
+initTreeCache (In (CachedNode _ sz Void)) = newNode Void sz
+initTreeCache (In (CachedNode _ sz (Leaf l))) = newNode (Leaf l) sz
+initTreeCache (In (CachedNode _ sz (Node n1 n2 n3 n4))) = do
+   n1' <- initTreeCache n1
+   n2' <- initTreeCache n2
+   n3' <- initTreeCache n3
+   n4' <- initTreeCache n4
+   newNode (Node n1' n2' n3' n4') sz
+
+runNodeCacheM :: (Ord a, Monad m) => NodeCacheM a m r -> m r
+runNodeCacheM comp = evalStateT comp (NodeCacheState M.empty 0) 
