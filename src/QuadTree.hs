@@ -59,7 +59,7 @@ atPosWithDef (In (CachedNode _ sz node@Node{})) def pos =
         offsPos = pos - subPos * (Pos middle middle)
     in atPosWithDef (getSubNode subPos node) def offsPos
 
-type NodeCache a = M.Map (NodeCacheKey a) (CachedTree a)
+type NodeCache a = M.Map (Int, (NodeCacheKey a)) (CachedTree a)
 
 nodeCache :: Ord a => Node a (CachedTree a) -> NodeCacheKey a
 nodeCache Void = NodeCacheKey Void
@@ -98,20 +98,19 @@ data NodeCacheState a = NodeCacheState { ncCache :: (NodeCache a),
                                          ncCurIdx :: NodeIdx }
 
 newNode :: (Ord a, Monad m) => Node a (CachedTree a) -> Int -> NodeCacheM a m (CachedTree a)
-newNode node sz = return $ In $ CachedNode 0 sz node
--- newNode node sz = 
---     do 
---       let cacheVal = nodeCache node
---       tab <- gets ncCache
---       case M.lookup cacheVal tab of
---         Just v -> return v
---         Nothing -> do
---           idx <- gets ncCurIdx
---           let nodeVal = In $ CachedNode idx sz node
---           modify $ \ (NodeCacheState cache idx) -> 
---               NodeCacheState (M.insert cacheVal nodeVal cache)
---                              (idx + 1)
---           return nodeVal
+newNode node sz = 
+    do 
+      let cacheVal = nodeCache node
+      tab <- gets ncCache
+      case M.lookup (sz, cacheVal) tab of
+        Just v -> return v
+        Nothing -> do
+          idx <- gets ncCurIdx
+          let nodeVal = In $ CachedNode idx sz node
+          modify $ \ (NodeCacheState cache idx) -> 
+              NodeCacheState (M.insert (sz, cacheVal) nodeVal cache)
+                             (idx + 1)
+          return nodeVal
 
 treeUpdate :: (Ord a, Monad m) => CachedTree a -> Pos -> a -> NodeCacheM a m (CachedTree a)
 treeUpdate (In (CachedNode _ sz Void)) pos val | sz == 1 =
