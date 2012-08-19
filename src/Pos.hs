@@ -3,7 +3,12 @@ module Pos
 
 data Pos = Pos { posX :: !Int, 
                  posY :: !Int}
-         deriving (Eq, Ord, Show)
+         deriving (Eq, Show)
+
+instance Ord Pos where
+    compare (Pos x1 y1) (Pos x2 y2) = case compare y1 y2 of
+                                        EQ -> compare x1 x2
+                                        v -> v
 
 instance Num Pos where
     (Pos x1 y1) + (Pos x2 y2) = Pos (x1 + x2) (y1 + y2)

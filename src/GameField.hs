@@ -1,4 +1,6 @@
-module GameField
+module GameField(Cell(..), cellIsRock, cellEndFall, cellMakeFalling,
+                 atPos, FieldMap, showField, GameField(..), GameFieldGlobals(..),
+                 readField)
     where
 
 import QuadTree
@@ -94,7 +96,9 @@ showField m = let pre = treeShow m
 data GameFieldGlobals = GameFieldGlobals { gfgFlooding :: !Int, gfgWaterProof :: !Int, 
                                            gfgTrampolineTarget :: !(M.Map Char [Char]),
                                            gfgTrampolinePos :: !(M.Map Char Pos),
-                                           gfgMaxGrowth :: !Int, gfgLiftPos :: !Pos}
+                                           gfgMaxGrowth :: !Int, gfgLiftPos :: !Pos,
+                                           gfgTotalLambdas :: !Int,
+                                           gfgWidth :: !Int, gfgHeight :: !Int}
 
 data GameField = GameField { gfMap :: !FieldMap, gfRobotPos :: !Pos,
                              gfCurLambdas :: !Int, gfWaterLevel :: !Int,
@@ -168,12 +172,15 @@ readField strs = let (rows'' , metadataStrs) = break (== "") strs
                                   gfgTrampolineTarget = readMetadata metadata "Trampoline" M.empty makeTrampolineTargetsMap,
                                   gfgTrampolinePos = msTrampolines fieldData,
                                   gfgMaxGrowth = readMetadata metadata "Growth" 25 (read . head . head),
-                                  gfgLiftPos = msLiftPos fieldData
+                                  gfgLiftPos = msLiftPos fieldData,
+                                  gfgTotalLambdas = msNumLambdas fieldData,
+                                  gfgWidth = w,
+                                  gfgHeight = h
                                 }
                  in GameField {
                                gfMap = field,
                                gfRobotPos = msRobotPos fieldData,
-                               gfCurLambdas = msNumLambdas fieldData,
+                               gfCurLambdas = 0,
                                gfWaterLevel = 1 + readMetadata metadata "Water" 0 (read . head . head),
                                gfFloodingCounter = gfgFlooding globals,
                                gfCurWaterProof = gfgWaterProof globals,

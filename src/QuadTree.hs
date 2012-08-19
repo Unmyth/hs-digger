@@ -76,7 +76,7 @@ readNodes rows sz =
         topRight = map (drop middle) rows
         bottomRight = map (drop middle) bottomRows
     in In $ CachedNode 0 sz $ fmap (\ lst -> readNodes lst middle)
-                      (Node rows topRight bottomRows bottomRight)
+                      (Node rows bottomRows topRight bottomRight)
 
 readTree :: [[a]] -> CachedTree a
 readTree rows = let w = maximum $ map length rows
@@ -89,8 +89,8 @@ treeShow :: Show a => CachedTree a -> [String]
 treeShow (In (CachedNode _ sz Void)) = replicate sz ""
 treeShow (In (CachedNode _ 1 (Leaf l))) = [show l]
 treeShow (In (CachedNode _ sz (Node v1 v2 v3 v4))) =
-    zipWith (++) (treeShow v1) (treeShow v2) ++
-    zipWith (++) (treeShow v3) (treeShow v4)
+    zipWith (++) (treeShow v1) (treeShow v3) ++
+    zipWith (++) (treeShow v2) (treeShow v4)
 
 type NodeCacheM a = StateT (NodeCacheState a) 
 
@@ -98,19 +98,20 @@ data NodeCacheState a = NodeCacheState { ncCache :: (NodeCache a),
                                          ncCurIdx :: NodeIdx }
 
 newNode :: (Ord a, Monad m) => Node a (CachedTree a) -> Int -> NodeCacheM a m (CachedTree a)
-newNode node sz = 
-    do 
-      let cacheVal = nodeCache node
-      tab <- gets ncCache
-      case M.lookup cacheVal tab of
-        Just v -> return v
-        Nothing -> do
-          idx <- gets ncCurIdx
-          let nodeVal = In $ CachedNode idx sz node
-          modify $ \ s@(NodeCacheState cache idx) -> 
-              NodeCacheState (M.insert cacheVal nodeVal cache)
-                             (idx + 1)
-          return nodeVal
+newNode node sz = return $ In $ CachedNode 0 sz node
+-- newNode node sz = 
+--     do 
+--       let cacheVal = nodeCache node
+--       tab <- gets ncCache
+--       case M.lookup cacheVal tab of
+--         Just v -> return v
+--         Nothing -> do
+--           idx <- gets ncCurIdx
+--           let nodeVal = In $ CachedNode idx sz node
+--           modify $ \ (NodeCacheState cache idx) -> 
+--               NodeCacheState (M.insert cacheVal nodeVal cache)
+--                              (idx + 1)
+--           return nodeVal
 
 treeUpdate :: (Ord a, Monad m) => CachedTree a -> Pos -> a -> NodeCacheM a m (CachedTree a)
 treeUpdate (In (CachedNode _ sz Void)) pos val | sz == 1 =

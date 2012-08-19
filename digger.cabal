@@ -13,8 +13,8 @@ Cabal-Version:       >=1.6
 --  Extensions:        DeriveDataTypeable
 
 Executable digger
-  Main-is:           main.hs
-  Build-Depends:     base >= 4.0, array
+  Main-is:           Main.hs
+  Build-Depends:     base >= 4.0, array, heaps, mtl, containers, transformers
 -- Other-Modules:     
   Hs-Source-Dirs:    src
 --  Extensions:          DeriveDataTypeable
