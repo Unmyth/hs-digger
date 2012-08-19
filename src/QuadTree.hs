@@ -1,5 +1,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
-module QuadTree
+module QuadTree(CachedTree, atPosWithDef, readTree, treeShow,
+                treeUpdate, NodeCacheM, initTreeCache, runNodeCacheM)
     where
 
 import qualified Data.Map as M
@@ -39,6 +40,7 @@ getSubNode (Pos 0 0) (Node x _ _ _) = x
 getSubNode (Pos 0 1) (Node _ x _ _) = x
 getSubNode (Pos 1 0) (Node _ _ x _) = x
 getSubNode (Pos 1 1) (Node _ _ _ x) = x
+getSubNode pos _ = error $ "Wrong pos in getSubPos : " ++ show pos
 
 setSubNode :: Pos -> b -> Node a b -> Node a b
 setSubNode (Pos 0 0) x (Node _  v2 v3 v4) = Node x  v2 v3 v4
@@ -49,6 +51,8 @@ setSubNode (Pos 1 1) x (Node v2 v3 v4 _ ) = Node v2 v3 v4 x
 atPosWithDef :: CachedTree a -> a -> Pos -> a
 atPosWithDef (In (CachedNode _ _ Void)) def _ = def
 atPosWithDef (In (CachedNode _ 1 (Leaf l))) _ (Pos 0 0) = l
+atPosWithDef (In (CachedNode _ sz node@Node{})) def pos@(Pos x y) | x >= sz || y >= sz =
+                                                                  error $ "Wrong at pos : " ++ show pos ++ "size is only " ++ show sz
 atPosWithDef (In (CachedNode _ sz node@Node{})) def pos = 
     let middle = sz `div` 2
         subPos = mapPos (`div` middle) pos
@@ -64,6 +68,7 @@ nodeCache node = NodeCacheKey $ fmap (nodeIdx . out) node
 
 readNodes :: [[a]] -> Int -> CachedTree a
 readNodes ((v : vs) : rows) 1 = In $ CachedNode 0 1 $ Leaf v
+readNodes ([]:rows) 1 = In $ CachedNode 0 1 $ Void
 readNodes rows sz | all null rows = In $ CachedNode  0 sz Void
 readNodes rows sz = 
     let middle = sz `div` 2
