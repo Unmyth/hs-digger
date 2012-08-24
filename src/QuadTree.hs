@@ -1,6 +1,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 module QuadTree(CachedTree, atPosWithDef, readTree, treeShow,
-                treeUpdate, NodeCacheM, initTreeCache, runNodeCacheM)
+                treeUpdate, NodeCacheM, initTreeCache, runNodeCacheM, treeIdx)
     where
 
 import qualified Data.Map as M
@@ -142,3 +142,6 @@ initTreeCache (In (CachedNode _ sz (Node n1 n2 n3 n4))) = do
 
 runNodeCacheM :: (Ord a, Monad m) => NodeCacheM a m r -> m r
 runNodeCacheM comp = evalStateT comp (NodeCacheState M.empty 0) 
+
+treeIdx :: CachedTree a -> NodeIdx
+treeIdx n = nodeIdx $ out n

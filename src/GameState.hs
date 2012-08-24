@@ -255,11 +255,13 @@ updateState :: Monad m => GameState -> Command -> GameM m GameState
 updateState gs cmd = do
   gs' <- updateRobot gs cmd
   (newMap, newHeap, newNumBeard, newBeardList) <- updateMap gs'
-  let newGrowth = if gfCurGrowth (gsField gs') == 1
-                     then (gfgMaxGrowth (gfGlobals (gsField gs')))
-                     else if gfCurGrowth (gsField gs') > 0
-                            then gfCurGrowth (gsField gs') - 1
-                            else 0
+  let newGrowth = if newNumBeard == 0
+                   then 0
+                   else if gfCurGrowth (gsField gs') == 1
+                          then (gfgMaxGrowth (gfGlobals (gsField gs')))
+                          else if gfCurGrowth (gsField gs') > 0
+                                 then gfCurGrowth (gsField gs') - 1
+                                 else 0
   let needBeardUpdateAfter = newGrowth == 1
   let field = gsField gs'
   let newWaterLevel = if gfFloodingCounter field == 1

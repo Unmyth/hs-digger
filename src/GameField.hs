@@ -186,7 +186,7 @@ readField strs = let (rows'' , metadataStrs) = break (== "") strs
                                gfCurWaterProof = gfgWaterProof globals,
                                gfNumBeards = msNumBeards fieldData,
                                gfPossibleBeards = msBeards fieldData,
-                               gfCurGrowth = gfgMaxGrowth globals,
+                               gfCurGrowth = (if msNumBeards fieldData == 0 then 0 else gfgMaxGrowth globals),
                                gfCurRazors = readMetadata metadata "Razors" 0 (read . head . head),
                                gfGlobals = globals
                               }

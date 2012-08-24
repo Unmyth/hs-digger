@@ -14,9 +14,8 @@ Cabal-Version:       >=1.6
 
 Executable digger
   Main-is:           Main.hs
-  Build-Depends:     base >= 4.0, array, heaps, mtl, containers, transformers
+  Build-Depends:     base >= 4.0, array, heaps, mtl, containers, transformers, astar
 -- Other-Modules:     
   Hs-Source-Dirs:    src
 --  Extensions:          DeriveDataTypeable
-  ghc-options:       -rtsopts
-Generates rewrite facilities for the given grammar
+  ghc-options:       -rtsopts -auto-all
