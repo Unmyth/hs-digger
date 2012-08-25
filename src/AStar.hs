@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies, FlexibleContexts #-}
 module AStar
     where
 
@@ -10,22 +10,23 @@ import Data.Function
 
 type Estimate = Int
 
-class (Ord a, Monad m) => SearchState a m | a -> m where
-    nextStates :: a -> m [a]
-    report :: a -> Int -> m ()
+class (Ord a, Monad (SearchMonad a)) => SearchState a where
+    type SearchMonad a :: * -> *
+    nextStates :: a -> (SearchMonad a) [a]
+    report :: a -> Int -> (SearchMonad a) ()
     estimate :: a -> Estimate
     finalState :: a -> Bool
     deadState :: a -> Bool
 
 newtype HeapElem a = HeapElem { getElem :: a }
 
-instance SearchState a m => Eq (HeapElem a) where
+instance SearchState a => Eq (HeapElem a) where
     (==) = (==) `on` (estimate . getElem)
 
-instance SearchState a m => Ord (HeapElem a) where
+instance SearchState a => Ord (HeapElem a) where
     compare = compare `on` (estimate . getElem)
 
-aStarIters :: (SearchState a m) => Int -> H.Heap (HeapElem a) -> S.Set a -> m (Maybe a)
+aStarIters :: (SearchState a) => Int -> H.Heap (HeapElem a) -> S.Set a -> (SearchMonad a) (Maybe a)
 aStarIters counter queue deadStateSet
     | H.null queue = return Nothing
     | True = let (Just (HeapElem state, newQueue)) = H.uncons queue
@@ -38,5 +39,5 @@ aStarIters counter queue deadStateSet
                                     let queue' = foldl' (\ h p -> H.insert p h) newQueue $ map HeapElem newStates
                                     aStarIters (counter + 1) queue' (S.insert state deadStateSet)
 
-aStar :: (SearchState a m) => a -> m (Maybe a)
+aStar :: (SearchState a) => a -> (SearchMonad a) (Maybe a)
 aStar initState = aStarIters 0 (H.singleton $ HeapElem initState) S.empty

@@ -251,6 +251,10 @@ haveLost map pos = let above = atPos map (pos + Pos 0 1)
 isUnderWater :: Int -> Pos -> Bool
 isUnderWater level pos = posY pos <= level
 
+cellNeedUpdate :: FieldMap -> Pos -> Bool
+cellNeedUpdate m pos = let cell = atPos m pos
+                       in cellIsRock cell || cell == ClosedLift
+
 updateState :: Monad m => GameState -> Command -> GameM m GameState
 updateState gs cmd = do
   gs' <- updateRobot gs cmd

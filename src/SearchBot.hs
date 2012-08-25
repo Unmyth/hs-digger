@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, TypeFamilies #-}
 module SearchBot
     where
 
@@ -35,7 +35,8 @@ instance Ord GameState where
                                ((gfCurGrowth field1) `compare` (gfCurGrowth field2)) `mappend`
                                ((gfCurRazors field1) `compare` (gfCurRazors field2))
 
-instance SearchState GameState SearchM where
+instance SearchState GameState where
+    type SearchMonad GameState = SearchM
     nextStates st = mapM (updateState st) $ [CmdU, CmdL, CmdR, CmdD, CmdW {- CmdA, -}] ++
                                 (if (gfNumBeards $ gsField st) == 0 then [] else [CmdS])
     estimate st = let field = gsField st

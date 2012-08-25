@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneDeriving, BangPatterns #-}
 module QuadTree(CachedTree, atPosWithDef, readTree, treeShow,
                 treeUpdate, NodeCacheM, initTreeCache, runNodeCacheM, treeIdx)
     where
