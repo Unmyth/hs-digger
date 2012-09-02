@@ -12,6 +12,9 @@ import AStar
 import Data.Ord
 import Data.Monoid
 import ManualBot
+import Data.IORef
+import Control.Monad.Reader
+import System.Posix.Signals
 
 type SearchM = GameM IO
 
@@ -52,16 +55,21 @@ instance Ord SGameState where
                                ((gfCurRazors field1) `compare` (gfCurRazors field2))
 
 instance SearchState SGameState where
-    type SearchMonad SGameState = SearchM
-    nextStates sgs = mapM (updateSGS sgs) $ [CmdU, CmdL, CmdR, CmdD, CmdW {- CmdA, -}] ++
+    type SearchMonad SGameState = ReaderT (IORef Bool) SearchM
+    nextStates sgs = mapM (lift . updateSGS sgs) $ [CmdU, CmdL, CmdR, CmdD, CmdW, CmdA ] ++
                                 (if (gfNumBeards $ gsField $ sgsState sgs) == 0 then [] else [CmdS])
     estimate sgs = sgsEstimation sgs
     finalState SGS{ sgsState = st } = gsStatus st == Win
     deadState SGS{ sgsState = st } = gsStatus st == Lost
     report SGS{ sgsState = st } cnt = if cnt `mod` 1000 == 0
                                         then do liftIO $ putStrLn $ "Iteration " ++ show cnt
-                                                printGS st
+                                                lift $ printGS st
                                         else return ()
+    curPenalty SGS { sgsState = st} = (- gsCurScore st)
+    shouldQuit _ = do
+      ref <- ask
+      val <- liftIO $ readIORef ref 
+      return val
 
 runSearch :: String -> SearchM ()
 runSearch fname = 
@@ -69,7 +77,9 @@ runSearch fname =
        let field = readField $ lines content
        let gs' = makeGameState field
        gs <- initState gs'
-       res <- aStar (SGS gs 0)
+       quitFlag <- liftIO $ newIORef False
+       liftIO $ installHandler sigINT (Catch (writeIORef quitFlag True)) Nothing
+       res <- runReaderT (aStar (SGS gs 0)) quitFlag
        case res of
          Nothing -> liftIO $ putStrLn "Not found"
          Just sgs1 -> printGS $ sgsState sgs1
